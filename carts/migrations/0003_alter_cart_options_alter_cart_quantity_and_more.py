@@ -32,6 +32,9 @@ def normalize_legacy_carts(apps, schema_editor):
                 cart.session_key = None
                 cart.save(update_fields=["session_key"], using=database)
             grouped[group] = cart
+    # Drain deferred FK events before adding constraints in this atomic migration.
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.connection.check_constraints()
 
 
 class Migration(migrations.Migration):

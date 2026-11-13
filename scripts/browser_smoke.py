@@ -3,6 +3,7 @@
 import os
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Thread
 from wsgiref.simple_server import make_server
@@ -28,10 +29,25 @@ django.setup()
 from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
+from django.db import connections
 from playwright.sync_api import expect, sync_playwright
 from goods.models import Products
 from orders.models import Order
 from users.models import User
+
+
+def database_read(operation):
+    """Keep synchronous ORM work outside Playwright's event loop."""
+
+    def run():
+        try:
+            return operation()
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(run).result(timeout=10)
+
 
 artifacts = ROOT / "outputs/browser"
 artifacts.mkdir(parents=True, exist_ok=True)
@@ -70,7 +86,9 @@ try:
                 "document.documentElement.scrollWidth <= window.innerWidth"
             ), "Mobile page overflows"
             page.set_viewport_size({"width": 1440, "height": 1000})
-            first = Products.objects.filter(quantity__gt=0).first()
+            first = database_read(
+                lambda: Products.objects.filter(quantity__gt=0).first()
+            )
             initial_stock = first.quantity
             page.goto(base + first.get_absolute_url())
             page.get_by_role("button", name="Добавить в корзину").click()
@@ -95,9 +113,11 @@ try:
             page.get_by_role("button", name="Подтвердить учебный заказ").click()
             expect(page).to_have_url(base + "/user/profile/")
             expect(page.get_by_text("Заказ № 1", exact=True)).to_be_visible()
-            assert Order.objects.count() == 1
-            first.refresh_from_db()
-            assert first.quantity == initial_stock - 1
+            assert database_read(lambda: Order.objects.count()) == 1
+            assert (
+                database_read(lambda: Products.objects.get(pk=first.pk).quantity)
+                == initial_stock - 1
+            )
             page.get_by_role("button", name="Выйти", exact=True).click()
             page.goto(base + "/user/login/")
             page.locator('[name="username"]').fill("smoke-manager")
@@ -111,12 +131,18 @@ try:
             expect(
                 page.get_by_role("heading", name="Предпросмотр импорта.")
             ).to_be_visible()
-            assert not Products.objects.filter(sku="OFFICE-CHAIR-001").exists()
+            assert not database_read(
+                lambda: Products.objects.filter(sku="OFFICE-CHAIR-001").exists()
+            )
             page.get_by_role("button", name="Применить 2 строк").click()
             expect(
                 page.get_by_role("heading", name="Остатки и товары.")
             ).to_be_visible()
-            assert Products.objects.filter(sku="OFFICE-CHAIR-001", quantity=10).exists()
+            assert database_read(
+                lambda: Products.objects.filter(
+                    sku="OFFICE-CHAIR-001", quantity=10
+                ).exists()
+            )
             page.screenshot(path=str(artifacts / "inventory.png"), full_page=True)
             assert not errors, errors
             print(

@@ -27,6 +27,8 @@ def fill_product_skus(apps, schema_editor):
         product.save(
             update_fields=["sku", "slug"], using=schema_editor.connection.alias
         )
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.connection.check_constraints()
 
 
 class Migration(migrations.Migration):

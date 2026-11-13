@@ -13,6 +13,8 @@ def fill_checkout_tokens(apps, schema_editor):
         order.save(
             update_fields=["checkout_token"], using=schema_editor.connection.alias
         )
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.connection.check_constraints()
 
 
 class Migration(migrations.Migration):
