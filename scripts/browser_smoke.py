@@ -16,7 +16,13 @@ import django
 from django.conf import settings
 
 work = tempfile.TemporaryDirectory(prefix="home-browser-")
-settings.DATABASES["default"]["NAME"] = Path(work.name) / "browser.sqlite3"
+settings.DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": Path(work.name) / "browser.sqlite3",
+        "OPTIONS": {"timeout": 20},
+    }
+}
 settings.MEDIA_ROOT = Path(work.name) / "media"
 settings.ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 settings.DEBUG = True
