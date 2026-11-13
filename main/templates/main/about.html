@@ -1,29 +1,30 @@
 {% extends "base.html" %}
-{% load static %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static "deps/css/my_footer_css.css" %}">
-{% endblock %}
-
-{% block modal_cart %}
-{% include "includes/cart_button.html" %}
-{% endblock  %}
-
 {% block content %}
-    <div class="mt-5 pt-5 bg-white custom-shadow rounded">
-        <div class="container p-4">
-        <h2 class="m-2"><strong>{{ content }}</strong></h2>
-        <p class="m-2">{{ text_on_page }}</p>
-        </div>
+    <div class="page-intro">
+        <div class="eyebrow">О ПРОЕКТЕ</div>
+        <h1>
+            Магазин, который
+            <br>
+            можно пройти целиком.
+        </h1>
+        <p>HOME — демонстрационное приложение на Django: от поиска товара до заказа и управления остатками.</p>
+    </div>
+    <div class="info-grid">
+        <article class="panel">
+            <h2>Покупателю</h2>
+            <p>Каталог, поиск, фильтры, гостевая корзина, регистрация, личный кабинет и история заказов.</p>
+            <a class="button" href="{% url 'catalog:index' 'all' %}">Открыть каталог ↗</a>
+        </article>
+        <article class="panel">
+            <h2>Команде магазина</h2>
+            <p>Импорт товаров из CSV с предпросмотром, проверкой всех строк и журналом. Сводка остатков и выгрузка отчёта доступны сотрудникам.</p>
+            {% if user.is_staff %}
+                <a class="button" href="{% url 'inventory' %}">Остатки и импорт ↗</a>
+            {% endif %}
+        </article>
+    </div>
+    <div class="notice">
+        <strong>Все товары, цены и заказы здесь учебные.</strong>
+        <p>Приложение сохраняет заказ и списывает демонстрационный остаток. Оно не принимает онлайн-платежи и не отправляет товары.</p>
     </div>
 {% endblock %}
-
-{% block footer %}
-<footer class="py-4 bg-dark">
-    <div class="container">
-        <p class="m-0 text-center text-white">Copyright &copy; Home Python Hub Studio 2023 - 2024</p>
-    </div>
-</footer>
-{% endblock %}
-
-

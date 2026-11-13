@@ -3,91 +3,48 @@ from django import forms
 
 
 class CreateOrderForm(forms.Form):
-
-    first_name = forms.CharField()
-    last_name = forms.CharField()
-    phone_number = forms.CharField()
-    requires_delivery = forms.ChoiceField(
-        choices=[
-            ("0", False),
-            ("1", True),
-            ],
-        )
-    delivery_address = forms.CharField(required=False)
-    payment_on_get = forms.ChoiceField(
-        choices=[
-            ("0", 'False'),
-            ("1", 'True'),
-            ],
-        )
+    first_name = forms.CharField(max_length=150, label="Имя")
+    last_name = forms.CharField(max_length=150, label="Фамилия")
+    phone_number = forms.CharField(
+        max_length=30,
+        label="Телефон",
+        widget=forms.TextInput(
+            attrs={"type": "tel", "placeholder": "+7 700 123 45 67"}
+        ),
+    )
+    requires_delivery = forms.TypedChoiceField(
+        choices=[("0", "Самовывоз"), ("1", "Доставка")],
+        coerce=lambda v: v == "1",
+        label="Получение заказа",
+        widget=forms.RadioSelect,
+    )
+    delivery_address = forms.CharField(
+        max_length=1000,
+        required=False,
+        label="Адрес доставки",
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    checkout_token = forms.UUIDField(widget=forms.HiddenInput)
 
     def clean_phone_number(self):
-        data = self.cleaned_data['phone_number']
+        value = self.cleaned_data["phone_number"].strip()
+        if re.search(r"[^0-9+() -]", value):
+            raise forms.ValidationError(
+                "Введите телефон цифрами, например +7 700 123 45 67."
+            )
+        digits = re.sub(r"[^0-9]", "", value)
+        if len(digits) == 10:
+            digits = "7" + digits
+        elif len(digits) == 11 and digits.startswith("8"):
+            digits = "7" + digits[1:]
+        if len(digits) != 11 or not digits.startswith("7"):
+            raise forms.ValidationError("Нужен номер из 11 цифр с кодом +7.")
+        return "+" + digits
 
-        if not data.isdigit():
-            raise forms.ValidationError("Номер телефона должен содержать только цифры")
-        
-        pattern = re.compile(r'^\d{10}$')
-        if not pattern.match(data):
-            raise forms.ValidationError("Неверный формат номера")
-
+    def clean(self):
+        data = super().clean()
+        if data.get("requires_delivery") and not data.get("delivery_address"):
+            self.add_error("delivery_address", "Укажите адрес для доставки.")
+        if not data.get("requires_delivery"):
+            data["delivery_address"] = ""
         return data
-
-
-
-    # first_name = forms.CharField(
-    #     widget=forms.TextInput(
-    #         attrs={
-    #             "class": "form-control",
-    #             "placeholder": "Введите ваше имя",
-    #         }
-    #     )
-    # )
-
-    # last_name = forms.CharField(
-    #     widget=forms.TextInput(
-    #         attrs={
-    #             "class": "form-control",
-    #             "placeholder": "Введите вашу фамилию",
-    #         }
-    #     )
-    # )
-
-    # phone_number = forms.CharField(
-    #     widget=forms.TextInput(
-    #         attrs={
-    #             "class": "form-control",
-    #             "placeholder": "Номер телефона",
-    #         }
-    #     )
-    # )
-
-    # requires_delivery = forms.ChoiceField(
-    #     widget=forms.RadioSelect(),
-    #     choices=[
-    #         ("0", False),
-    #         ("1", True),
-    #     ],
-    #     initial=0,
-    # )
-
-    # delivery_address = forms.CharField(
-    #     widget=forms.Textarea(
-    #         attrs={
-    #             "class": "form-control",
-    #             "id": "delivery-address",
-    #             "rows": 2,
-    #             "placeholder": "Введите адрес доставки",
-    #         }
-    #     ),
-    #     required=False,
-    # )
-
-    # payment_on_get = forms.ChoiceField(
-    #     widget=forms.RadioSelect(),
-    #     choices=[
-    #         ("0", 'False'),
-    #         ("1", 'True'),
-    #     ],
-    #     initial="card",
-    # )

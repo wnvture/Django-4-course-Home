@@ -1,50 +1,37 @@
-from django.db.models import Q
-from django.contrib.postgres.search import (
-    SearchVector,
-    SearchQuery,
-    SearchRank,
-    SearchHeadline,
-)
+from django.db import connection
+from django.db.models import Func, Q, TextField
 
 from goods.models import Products
 
 
 def q_search(query):
-    if query.isdigit() and len(query) <= 5:
-        return Products.objects.filter(id=int(query))
-
-    vector = SearchVector("name", "description")
-    query = SearchQuery(query)
-
-    result = (
-        Products.objects.annotate(rank=SearchRank(vector, query))
-        .filter(rank__gt=0)
-        .order_by("-rank")
-    )
-
-    result = result.annotate(
-        headline=SearchHeadline(
-            "name",
-            query,
-            start_sel='<span style="background-color: yellow;">',
-            stop_sel="</span>",
+    query = query.strip()[:200]
+    products = Products.objects.select_related("category")
+    if not query:
+        return products
+    if connection.vendor == "sqlite":
+        products = products.annotate(
+            search_name=Func(
+                "name", function="UNICODE_CASEFOLD", output_field=TextField()
+            ),
+            search_description=Func(
+                "description", function="UNICODE_CASEFOLD", output_field=TextField()
+            ),
+            search_sku=Func(
+                "sku", function="UNICODE_CASEFOLD", output_field=TextField()
+            ),
         )
-    )
-    result = result.annotate(
-        bodyline=SearchHeadline(
-            "description",
-            query,
-            start_sel='<span style="background-color: yellow;">',
-            stop_sel="</span>",
+        for token in query.casefold().split()[:10]:
+            products = products.filter(
+                Q(search_name__contains=token)
+                | Q(search_description__contains=token)
+                | Q(search_sku__contains=token)
+            )
+        return products
+    for token in query.split()[:10]:
+        products = products.filter(
+            Q(name__icontains=token)
+            | Q(description__icontains=token)
+            | Q(sku__icontains=token)
         )
-    )
-    return result
-    # keywords = [word for word in query.split() if len(word) > 2]
-
-    # q_objects = Q()
-
-    # for token in keywords:
-    #     q_objects |= Q(description__icontains=token)
-    #     q_objects |= Q(name__icontains=token)
-
-    # return Products.objects.filter(q_objects)
+    return products

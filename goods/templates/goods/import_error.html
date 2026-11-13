@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="page-intro compact">
+        <div class="eyebrow">ПРОВЕРКА CSV</div>
+        <h1>Нужно исправить файл.</h1>
+        <p>Товары не изменены. Исправьте указанные строки и загрузите файл ещё раз.</p>
+    </div>
+    <section class="panel">
+        <form method="post"
+              enctype="multipart/form-data"
+              action="{% url 'import_preview' %}">
+            {% csrf_token %}
+            {% include "includes/form_fields.html" %}
+            <button class="button">Проверить повторно →</button> <a class="underlined"
+                                                                    href="{% url 'inventory' %}">Вернуться к остаткам</a>
+        </form>
+    </section>
+{% endblock %}

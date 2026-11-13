@@ -1,47 +1,35 @@
-"""
-URL configuration for app project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from django.conf.urls.static import static
 
-from app import settings
-
+from goods.inventory_views import (
+    InventoryView,
+    ImportPreviewView,
+    ImportApplyView,
+    inventory_export,
+    import_template,
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('main.urls', namespace='main')),
-    path('catalog/', include('goods.urls', namespace='catalog')),
-    path('user/', include('users.urls', namespace='user')),
-    path('cart/', include('carts.urls', namespace='cart')),
-    path('orders/', include('orders.urls', namespace='orders')),
+    path("admin/", admin.site.urls),
+    path("", include("main.urls", namespace="main")),
+    path("catalog/", include("goods.urls", namespace="catalog")),
+    path("user/", include("users.urls", namespace="user")),
+    path("cart/", include("carts.urls", namespace="cart")),
+    path("orders/", include("orders.urls", namespace="orders")),
+    path("inventory/", InventoryView.as_view(), name="inventory"),
+    path("inventory/import/", ImportPreviewView.as_view(), name="import_preview"),
+    path(
+        "inventory/import/<uuid:pk>/apply/",
+        ImportApplyView.as_view(),
+        name="import_apply",
+    ),
+    path("inventory/export/", inventory_export, name="inventory_export"),
+    path("inventory/template/", import_template, name="import_template"),
 ]
-
 if settings.DEBUG:
-    urlpatterns += [
-        path("__debug__/", include("debug_toolbar.urls")),
-    ]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
- 
-
-
-"""
-www.site.com/admin/
-www.site.com
-www.site.com/about/
-www.site.com/catalog/
-www.site.com/catalog/product
-"""
+admin.site.site_header = "HOME · управление магазином"
+admin.site.site_title = "HOME Admin"
+admin.site.index_title = "Товары, остатки и заказы"

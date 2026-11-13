@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="page-intro compact">
+        <div class="eyebrow">РАБОЧЕЕ МЕСТО СОТРУДНИКА</div>
+        <h1>Остатки и товары.</h1>
+        <p>Сводка каталога, импорт из CSV и контроль небольших остатков.</p>
+    </div>
+    <div class="metrics">
+        <div>
+            <span>Товаров</span>
+            <strong>{{ product_count }}</strong>
+        </div>
+        <div>
+            <span>Единиц на складе</span>
+            <strong>{{ units }}</strong>
+        </div>
+        <div>
+            <span>Остаток ≤ {{ threshold }} шт.</span>
+            <strong>{{ low_count }}</strong>
+        </div>
+        <div>
+            <span>Остатки в ценах продажи</span>
+            <strong>{{ stock_value|floatformat:2 }} ₸</strong>
+        </div>
+    </div>
+    <div class="inventory-tools">
+        <section class="panel">
+            <h2>Импорт товаров</h2>
+            <p class="muted">Сначала проверка и предпросмотр. Данные изменятся после подтверждения.</p>
+            <form action="{% url 'import_preview' %}"
+                  method="post"
+                  enctype="multipart/form-data">
+                {% csrf_token %}
+                {% include "includes/form_fields.html" %}
+                <button class="button">Проверить CSV →</button> <a class="underlined"
+                                                                   href="{% url 'import_template' %}">Скачать шаблон ↓</a>
+            </form>
+            <p class="field-help">UTF-8 · до 2 МБ · до 1000 товаров. Артикулы в Excel храните как текст.</p>
+        </section>
+        <section class="panel">
+            <h2>Последние импорты</h2>
+            {% for batch in batches %}
+                <div class="import-log">
+                    <strong>{{ batch.filename }}</strong>
+                    <span>{{ batch.created_at|date:'d.m.Y H:i' }} · {{ batch.created_by.username|default:'Удалённый пользователь' }}</span>
+                    <span>
+                    {% if batch.applied_at %}Применён{% else %}Предпросмотр{% endif %} · строк: {{ batch.summary.rows }}</span>
+                </div>
+            {% empty %}
+                <p class="muted">Здесь появится журнал загрузок.</p>
+            {% endfor %}
+        </section>
+    </div>
+    <form class="filter-bar" method="get">
+        <input name="q"
+               aria-label="Поиск по остаткам"
+               placeholder="Артикул или название"
+               value="{{ request.GET.q }}">
+        <label>
+            Порог
+            <input type="number"
+                   name="threshold"
+                   min="0"
+                   max="100000"
+                   value="{{ threshold }}"
+                   class="threshold">
+        </label>
+        <label>
+        <input type="checkbox"
+               name="low"
+               value="on"
+               {% if request.GET.low == 'on' %}checked{% endif %}> Только малые остатки</label>
+        <button class="button secondary small">Применить</button>
+        <a class="underlined"
+           href="{% url 'inventory_export' %}?{{ request.GET.urlencode }}">Выгрузить CSV ↓</a>
+    </form>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Артикул</th>
+                    <th>Товар</th>
+                    <th>Категория</th>
+                    <th>Остаток</th>
+                    <th>Цена продажи</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    <tr>
+                        <td>{{ product.sku }}</td>
+                        <td>
+                            <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                        </td>
+                        <td>{{ product.category.name }}</td>
+                        <td>{{ product.quantity }} шт.</td>
+                        <td>{{ product.sell_price|floatformat:2 }} ₸</td>
+                        <td>
+                            {% if not product.quantity %}
+                                <span class="status red">Нет остатка</span>
+                            {% elif product.quantity <= threshold %}
+                                <span class="status amber">Пополнить</span>
+                            {% else %}
+                                <span class="status">В наличии</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">Подходящих товаров нет.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

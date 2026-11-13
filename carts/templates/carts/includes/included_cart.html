@@ -1,58 +1,58 @@
-{% load static %}
-
-<div class="card mb-3 text-bg-light shadow-lg">
-    {% for cart in carts %}
-        <div class="card-header">
-            <h5 class="card-title">{{ cart.product.name }}</h5>
-        </div>
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-                <div class="row text-center">
-                    <div class="col p-0">
-                        <div class="input-group">
-                            <span class="input-group-btn">
-                                <button type="button" class="btn btn-dark btn-sm decrement"
-                                    data-cart-id="{{ cart.id }}"
-                                    data-cart-change-url="{% url "cart:cart_change" %}">
-                                    {% csrf_token %}
-                                    -</button>
-                            </span>
-                            <input type="text" class="form-control number" value="{{ cart.quantity }}"
-                                readonly>
-                            <span class="input-group-btn">
-                                <button type="button" class="btn btn-dark btn-sm increment"
-                                    data-cart-id="{{ cart.id }}"
-                                    data-cart-change-url="{% url "cart:cart_change" %}">
-                                    {% csrf_token %}
-                                    +</button>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="col p-0">
-                        <p>x {{ cart.product.sell_price }} = </p>
-                    </div>
-                    <div class="col p-0"><strong> {{cart.products_price}} $</strong></div>
-                    <div class="col p-0">
-                        <a href="{% url "cart:cart_remove" %}" class="remove-from-cart"
-                        data-cart-id="{{ cart.id }}">
-                            {% csrf_token %}
-                            <img class="mx-1" src="{% static "deps/icons/trash3-fill.svg" %}"
-                                alt="Catalog Icon" width="16" height="16">
-                        </a>
-                    </div>
+{% if carts %}
+    <div class="cart-lines">
+        {% for cart in carts %}
+            <article class="cart-line">
+                <div>
+                    <span class="eyebrow">{{ cart.product.sku }}</span>
+                    <h3>
+                        <a href="{{ cart.product.get_absolute_url }}">{{ cart.product.name }}</a>
+                    </h3>
+                    <p class="muted">{{ cart.product.sell_price|floatformat:2 }} ₸ за штуку · в наличии {{ cart.product.quantity }}</p>
                 </div>
-            </li>
-        </ul>
-    {% endfor %}
-</div>
-<div class="card mb-3 shadow-lg">
-    <div class="card-footer">
-        <p class="float-left">Итого <strong>{{ carts.total_quantity }}</strong> товар(а) на сумму</p>
-        <h4 class="float-left"><strong>{{ carts.total_price }} $</strong></h4>
+                <form method="post"
+                      action="{% url 'cart:cart_change' %}"
+                      class="quantity-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="cart_id" value="{{ cart.pk }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <label for="quantity-{{ cart.pk }}">Количество</label>
+                    <input id="quantity-{{ cart.pk }}"
+                           aria-label="Количество {{ cart.product.name }}"
+                           name="quantity"
+                           type="number"
+                           min="1"
+                           max="32767"
+                           value="{{ cart.quantity }}"
+                           required>
+                    <button class="text-button">Обновить</button>
+                </form>
+                <strong>{{ cart.products_price|floatformat:2 }} ₸</strong>
+                <form method="post" action="{% url 'cart:cart_remove' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="cart_id" value="{{ cart.pk }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button class="remove-button" aria-label="Удалить {{ cart.product.name }}">×</button>
+                </form>
+            </article>
+        {% endfor %}
     </div>
-</div>
-{% if carts and not order%}
-<a class="btn btn-dark" href="{% url "orders:create_order" %}">
-    Оформить заказ
-</a>
+    <div class="cart-total">
+        <span>Итого · {{ carts.total_quantity }} шт.</span>
+        <strong>{{ carts.total_price|floatformat:2 }} ₸</strong>
+    </div>
+    {% if not checkout %}
+        <div class="cart-actions">
+            <a class="underlined" href="{% url 'catalog:index' 'all' %}">← Продолжить покупки</a>
+            <a class="button" href="{% url 'orders:create_order' %}">Оформить заказ ↗</a>
+        </div>
+        {% if not user.is_authenticated %}
+            <p class="muted">Для оформления потребуется войти или зарегистрироваться. Корзина сохранится.</p>
+        {% endif %}
+    {% endif %}
+{% else %}
+    <div class="empty-state">
+        <h2>В корзине пока пусто</h2>
+        <p>Начните с вещи, которая вам нравится.</p>
+        <a class="button" href="{% url 'catalog:index' 'all' %}">Перейти в каталог ↗</a>
+    </div>
 {% endif %}

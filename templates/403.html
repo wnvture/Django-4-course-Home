@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="empty-state">
+        <div class="eyebrow">403</div>
+        <h1>Доступ ограничен.</h1>
+        <p>Этот раздел доступен сотрудникам магазина.</p>
+        <a class="button" href="{% url 'main:index' %}">На главную ↗</a>
+    </div>
+{% endblock %}

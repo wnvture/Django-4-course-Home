@@ -1,0 +1,41 @@
+{% load static %}
+<article class="product-card">
+    <a class="product-picture" href="{{ product.get_absolute_url }}">
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" loading="lazy">
+        {% else %}
+            <img src="{% static 'deps/images/Not found image.png' %}"
+                 alt="Фото пока нет"
+                 loading="lazy">
+        {% endif %}
+        {% if product.discount %}
+            <span class="discount">−{{ product.discount|floatformat:-2 }}%</span>
+        {% endif %}
+    </a>
+    <div class="product-meta">
+        <span>{{ product.category.name }}</span>
+        <span>{{ product.sku }}</span>
+    </div>
+    <h3>
+        <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+    </h3>
+    <div class="product-bottom">
+        <div class="price">{{ product.sell_price|floatformat:2 }} ₸ {% if product.discount %}
+            <del>{{ product.price|floatformat:2 }} ₸</del>
+        {% endif %}
+    </div>
+    <form method="post" action="{% url 'cart:cart_add' %}">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" value="{{ product.pk }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="add-button"
+                aria-label="Добавить {{ product.name }} в корзину"
+                {% if not product.quantity %}disabled{% endif %}>
+            {% if product.quantity %}+{% else %}—{% endif %}
+        </button>
+    </form>
+</div>
+<p class="availability">
+    {% if product.quantity %}В наличии · {{ product.quantity }} шт.{% else %}Нет в наличии{% endif %}
+</p>
+</article>

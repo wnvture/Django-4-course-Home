@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="empty-state">
+        <div class="eyebrow">404</div>
+        <h1>Этой страницы нет.</h1>
+        <p>Товар мог быть удалён или ссылка изменилась.</p>
+        <a class="button" href="{% url 'catalog:index' 'all' %}">Открыть каталог ↗</a>
+    </div>
+{% endblock %}

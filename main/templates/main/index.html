@@ -1,24 +1,69 @@
 {% extends "base.html" %}
 {% load static %}
-
-{% block css %}
-    <link rel="stylesheet" href="{% static "deps/css/my_footer_css.css" %}">
-{% endblock %}
-
-{% block modal_cart %}
-{% include "includes/cart_button.html" %}
-{% endblock  %}
-
 {% block content %}
-    <h1 class="mt-5 pt-5"><strong>{{ content }}</strong></h1>
-{% endblock %}
-
-{% block footer %}
-<footer class="py-4 bg-dark">
-    <div class="container">
-        <p class="m-0 text-center text-white">Copyright &copy; Home Python Hub Studio 2023 - 2024</p>
+    <section class="hero">
+        <div class="hero-copy">
+            <div class="eyebrow">ПРОСТРАНСТВО ДЛЯ ЖИЗНИ</div>
+            <h1>
+                Дом начинается
+                <br>
+                с простых вещей.
+            </h1>
+            <p>Мебель и детали интерьера для спокойного утра, долгого ужина и любимого места у окна.</p>
+            <a class="button" href="{% url 'catalog:index' 'all' %}">Смотреть коллекцию <span>↗</span>
+            </a>
+            <div class="hero-caption">HOME / мебель и декор</div>
+        </div>
+        <div class="hero-picture">
+            <img src="{% static 'deps/images/goods/corner sofa.jpg' %}"
+                 alt="Светлый диван в интерьере">
+            <span>Тёплые оттенки. Простые формы.</span>
+        </div>
+    </section>
+    <div class="benefits">
+        <div>
+            <b>01</b>
+            <span>Поиск и фильтры<small>Находите вещи по названию и артикулу</small>
+            </span>
+        </div>
+        <div>
+            <b>02</b>
+            <span>Сохранённая корзина<small>Товары останутся после входа</small>
+            </span>
+        </div>
+        <div>
+            <b>03</b>
+            <span>История заказов<small>Все покупки в личном кабинете</small>
+            </span>
+        </div>
     </div>
-</footer>
+    <section>
+        <div class="section-heading">
+            <div>
+                <div class="eyebrow">ВЫБРАНО ДЛЯ ВАШЕГО ДОМА</div>
+                <h2>Начните с любимой вещи.</h2>
+            </div>
+            <a class="underlined" href="{% url 'catalog:index' 'all' %}">Весь каталог ↗</a>
+        </div>
+        <div class="product-grid">
+            {% for product in featured %}
+                {% include "includes/product_card.html" %}
+            {% empty %}
+                <div class="empty-state">
+                    <h3>Коллекция скоро появится</h3>
+                    <p>Каталог пока пуст.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="editorial">
+        <div class="eyebrow">HOME, В ДЕТАЛЯХ</div>
+        <h2>
+            Удобство —
+            <br>
+            в повседневных мелочах.
+        </h2>
+        <p>Сравнивайте товары, добавляйте их в корзину и оформляйте учебный заказ. Команда магазина может управлять остатками и загружать товары из CSV.</p>
+        <a href="{% url 'main:about' %}" class="underlined">Об этом проекте ↗</a>
+    </section>
 {% endblock %}
-
-

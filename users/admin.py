@@ -1,16 +1,10 @@
 from django.contrib import admin
-from carts.admin import CartTabAdmin
-from orders.admin import OrderTabulareAdmin
-
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from users.models import User
 
-# admin.site.register(User)
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ["username", "first_name", "last_name", "email",]
-    search_fields = ["username", "first_name", "last_name", "email",]
-
-    
-
-    inlines = [CartTabAdmin, OrderTabulareAdmin]
+class UserAdmin(BaseUserAdmin):
+    # Keep Django's password hashing, reset forms and permission controls.
+    fieldsets = BaseUserAdmin.fieldsets + (("Изображение", {"fields": ("image",)}),)
+    list_display = ("username", "first_name", "last_name", "email", "is_staff")

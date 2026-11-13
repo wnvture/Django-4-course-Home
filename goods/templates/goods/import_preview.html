@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="page-intro compact">
+        <div class="eyebrow">ПРОВЕРКА CSV</div>
+        <h1>Предпросмотр импорта.</h1>
+        <p>{{ batch.filename }} · строк: {{ batch.summary.rows }} · новых товаров: {{ batch.summary.created }} · обновлений: {{ batch.summary.updated }}</p>
+    </div>
+    <div class="notice">Проверьте изменения перед применением. При обновлении остаток заменяется числом из файла. Если товары изменятся после предпросмотра, импорт будет отменён целиком.</div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Действие</th>
+                    <th>Артикул</th>
+                    <th>Товар</th>
+                    <th>Категория</th>
+                    <th>Цена, ₸</th>
+                    <th>Остаток</th>
+                    <th>Скидка, %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in batch.rows %}
+                    <tr>
+                        <td>{% if row.action == "create" %}Создать{% else %}Обновить{% endif %}</td>
+                        <td>{{ row.sku }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.category }}</td>
+                        <td>{% if row.baseline %}{{ row.baseline.price }} → {% endif %}{{ row.price }}</td>
+                        <td>{% if row.baseline %}{{ row.baseline.quantity }} → {% endif %}{{ row.quantity }}</td>
+                        <td>{{ row.discount }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="cart-actions">
+        <a href="{% url 'inventory' %}" class="underlined">← Вернуться без применения</a>
+        <form method="post" action="{% url 'import_apply' batch.pk %}">
+            {% csrf_token %}
+            <button class="button">Применить {{ batch.summary.rows }} строк →</button>
+        </form>
+    </div>
+{% endblock %}

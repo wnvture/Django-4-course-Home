@@ -1,48 +1,36 @@
 from django.contrib import admin
-
 from orders.models import Order, OrderItem
 
-# admin.site.register(Order)
-# admin.site.register(OrderItem)
 
-class OrderItemTabulareAdmin(admin.TabularInline):
+class OrderItemTabularAdmin(admin.TabularInline):
     model = OrderItem
-    fields = "product", "name", "price", "quantity"
-    search_fields = (
-        "product",
-        "name",
-    )
+    fields = ("product", "name", "price", "quantity")
+    readonly_fields = fields
     extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = "order", "product", "name", "price", "quantity"
-    search_fields = (
+    list_display = ("order", "product", "name", "price", "quantity")
+    search_fields = ("name", "product__sku", "order__id")
+    readonly_fields = (
         "order",
         "product",
         "name",
-    )
-
-
-class OrderTabulareAdmin(admin.TabularInline):
-    model = Order
-    fields = (
-        "requires_delivery",
-        "status",
-        "payment_on_get",
-        "is_paid",
+        "price",
+        "quantity",
         "created_timestamp",
     )
 
-    search_fields = (
-        "requires_delivery",
-        "payment_on_get",
-        "is_paid",
-        "created_timestamp",
-    )
-    readonly_fields = ("created_timestamp",)
-    extra = 0
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Order)
@@ -56,15 +44,23 @@ class OrderAdmin(admin.ModelAdmin):
         "is_paid",
         "created_timestamp",
     )
-
-    search_fields = (
-        "id",
-    )
-    readonly_fields = ("created_timestamp",)
-    list_filter = (
+    search_fields = ("=id", "first_name", "last_name", "user__username")
+    readonly_fields = (
+        "user",
+        "checkout_token",
+        "first_name",
+        "last_name",
+        "phone_number",
         "requires_delivery",
-        "status",
+        "delivery_address",
         "payment_on_get",
-        "is_paid",
+        "created_timestamp",
     )
-    inlines = (OrderItemTabulareAdmin,)
+    list_filter = ("requires_delivery", "status", "payment_on_get", "is_paid")
+    inlines = (OrderItemTabularAdmin,)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
