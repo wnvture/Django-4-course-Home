@@ -56,11 +56,14 @@ try:
             expect(page.get_by_role("heading", level=1)).to_contain_text(
                 "Дом начинается"
             )
-            page.screenshot(path=str(artifacts / "home-desktop.png"), full_page=True)
             expect(page.locator("img")).not_to_have_count(0)
-            assert page.locator("img").evaluate_all(
-                "(images) => images.every(i => i.complete && i.naturalWidth > 0)"
-            ), "Broken product image"
+            page.locator("img").evaluate_all(
+                "(images) => images.forEach(i => i.loading = 'eager')"
+            )
+            page.wait_for_function(
+                "Array.from(document.images).every(i => i.complete && i.naturalWidth > 0)"
+            )
+            page.screenshot(path=str(artifacts / "home-desktop.png"), full_page=True)
             page.set_viewport_size({"width": 390, "height": 844})
             page.screenshot(path=str(artifacts / "home-mobile.png"), full_page=True)
             assert page.evaluate(
