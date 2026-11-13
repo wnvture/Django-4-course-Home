@@ -1,0 +1,78 @@
+name: Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sqlite:
+    name: SQLite · Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py collectstatic --noinput --verbosity 0
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test --noinput --verbosity 2
+      - run: node --check static/deps/js/home.js
+      - name: Production settings checks
+        env:
+          DJANGO_DEBUG: 'False'
+          DJANGO_SECRET_KEY: ci-only-settings-check-91b3db50-82b4-4a87-b15d-0d9778c2a6ae
+          DJANGO_ALLOWED_HOSTS: shop.example.com
+        run: python manage.py check --deploy --fail-level WARNING
+  postgres:
+    name: PostgreSQL · concurrency and migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: home
+          POSTGRES_PASSWORD: test-only-local-ci
+          POSTGRES_DB: home
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U home -d home"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://home:test-only-local-ci@127.0.0.1:5432/home
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python manage.py collectstatic --noinput --verbosity 0
+      - run: python manage.py migrate --noinput
+      - run: python manage.py test --noinput --verbosity 2
+  browser:
+    name: Browser · shopping and CSV import
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python scripts/browser_smoke.py
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: browser-screenshots
+          path: outputs/browser/
+          retention-days: 7
